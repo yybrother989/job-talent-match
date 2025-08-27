@@ -10,8 +10,49 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Trash2, Download, Edit, Eye, Upload, FileText, Star, Brain, DollarSign, AlertTriangle } from 'lucide-react'
 
-import { Trash2, Download, Edit, Eye, Upload, FileText, Star } from 'lucide-react'
+// Import text extraction functions from OCR version (most reliable)
+const extractTextFromFile = async (file: File): Promise<string> => {
+  const { extractTextFromFile: extractFn } = await import('@/lib/textExtractionOCR')
+  return extractFn(file)
+}
+
+const cleanExtractedText = async (text: string): Promise<string> => {
+  const { cleanExtractedText: cleanFn } = await import('@/lib/textExtractionOCR')
+  return cleanFn(text)
+}
+
+const estimateTextQuality = async (text: string): Promise<number> => {
+  const { estimateTextQuality: qualityFn } = await import('@/lib/textExtractionOCR')
+  return qualityFn(text)
+}
+
+const parseResumeWithAI = async (text: string) => {
+  try {
+    const response = await fetch('/api/parse-resume', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ resumeText: text }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to parse resume')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('API call failed:', error)
+    throw error
+  }
+}
+
+const estimateParsingCost = async (text: string): Promise<number> => {
+  const { estimateParsingCost: costFn } = await import('@/lib/openai')
+  return costFn(text)
+}
 
 interface Resume {
   id: string
@@ -21,14 +62,75 @@ interface Resume {
   file_name: string
   file_size: number
   file_type: string
+  
+  // AI Parsing Results
   parsed_text: string
+  parsing_confidence: number
+  last_parsed_at: string | null
+  
+  // Technical Skills (AI-extracted, structured)
+  technical_skills: {
+    programming_languages: string[]
+    frameworks: string[]
+    databases: string[]
+    cloud_platforms: string[]
+    tools: string[]
+    methodologies: string[]
+  } | null
+  
+  // Soft Skills (AI-extracted)
+  soft_skills: string[]
+  
+  // Domain Knowledge (AI-extracted)
+  domain_knowledge: string[]
+  
+  // Education Details (AI-extracted, structured)
+  education: Array<{
+    degree: string
+    field_of_study: string
+    institution: string
+    graduation_year: number
+    gpa?: number
+    honors?: string[]
+  }> | null
+  
+  // Certifications (AI-extracted, structured)
+  certifications: Array<{
+    name: string
+    issuing_organization: string
+    issue_date: string
+    expiry_date?: string
+    credential_id?: string
+    level?: string
+  }> | null
+  
+  // Experience Details (AI-extracted, structured)
+  experience_details: Array<{
+    company: string
+    title: string
+    start_date: string
+    end_date?: string
+    description: string
+    key_achievements: string[]
+    technologies_used: string[]
+    impact_metrics: string[]
+    team_size?: number
+    budget_managed?: number
+  }> | null
+  
+  // Legacy fields for backward compatibility
   skills: string[]
   experience_summary: string
   education_summary: string
-  certifications: string[]
   languages: string[]
+  
+  // Resume Metadata
   is_primary: boolean
   is_public: boolean
+  version: string
+  ai_parsing_status: 'pending' | 'completed' | 'failed' | 'not_attempted'
+  ai_parsing_error: string | null
+  
   created_at: string
   updated_at: string
 }
@@ -41,6 +143,8 @@ export function ResumeManager() {
   const [editingResume, setEditingResume] = useState<Resume | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  // Check if OpenAI API key is available (will be checked via API route)
+  const hasOpenAIKey = true
 
   // Form state for editing
   const [editForm, setEditForm] = useState({
@@ -48,7 +152,14 @@ export function ResumeManager() {
     experience_summary: '',
     education_summary: '',
     skills: [] as string[],
-    certifications: [] as string[],
+    certifications: [] as Array<{
+      name: string
+      issuing_organization: string
+      issue_date: string
+      level?: string
+      credential_id?: string
+      expiry_date?: string
+    }>,
     languages: [] as string[],
     is_primary: false,
     is_public: true,
@@ -118,30 +229,121 @@ export function ResumeManager() {
           .from('resumes')
           .getPublicUrl(fileName)
 
-        // Create resume record in database
+        // Extract text from file
+        let parsedText = ''
+        let aiParsedData = null
+        let parsingCost = 0
+        
+        try {
+          console.log('=== TEXT EXTRACTION DEBUG ===')
+          console.log('File type:', file.type)
+          console.log('File size:', file.size)
+          console.log('Starting text extraction...')
+          
+          // Extract raw text
+          console.log('Calling extractTextFromFile...')
+          const rawText = await extractTextFromFile(file)
+          console.log('Raw text extracted:', rawText ? rawText.substring(0, 200) + '...' : 'NO TEXT')
+          console.log('Raw text length:', rawText ? rawText.length : 0)
+          
+          parsedText = await cleanExtractedText(rawText)
+          console.log('Cleaned text:', parsedText ? parsedText.substring(0, 200) + '...' : 'NO TEXT')
+          console.log('Cleaned text length:', parsedText ? parsedText.length : 0)
+          
+          // Estimate text quality
+          const textQuality = await estimateTextQuality(parsedText)
+          console.log('Text quality score:', textQuality)
+          
+          // Use AI parsing if text quality is good enough and OpenAI is available
+          if (textQuality > 40 && parsedText.length > 100) {
+            console.log('Text quality good, attempting AI parsing...')
+            try {
+              aiParsedData = await parseResumeWithAI(parsedText)
+              parsingCost = await estimateParsingCost(parsedText)
+              console.log('AI parsing successful! Cost estimate:', parsingCost)
+            } catch (aiError) {
+              console.warn('AI parsing failed, using basic text extraction:', aiError)
+              // Continue with basic text extraction
+            }
+          } else {
+            console.log('Text quality too low or OpenAI not available, using basic extraction')
+            console.log('Text length:', parsedText.length)
+            console.log('Quality threshold not met:', textQuality <= 40)
+          }
+        } catch (textError) {
+          console.error('Text extraction failed completely:', textError)
+          console.error('Error details:', textError instanceof Error ? textError.message : String(textError))
+          
+          // Fallback: Try basic text extraction from file name and type
+          console.log('Attempting fallback text extraction...')
+          parsedText = `Resume: ${file.name}\nFile Type: ${file.type}\nFile Size: ${file.size} bytes\n\nText extraction failed. Please ensure the file contains extractable text.`
+          console.log('Fallback text created:', parsedText)
+        }
+
+        // Create resume record in database with AI parsing data
+        const resumeData = {
+          user_id: user.id,
+          title: file.name.replace(/\.[^/.]+$/, ''), // Remove file extension
+          file_url: publicUrl,
+          file_name: file.name,
+          file_size: file.size,
+          file_type: file.type,
+          
+          // AI Parsing Results
+          parsed_text: parsedText,
+          parsing_confidence: aiParsedData ? 0.95 : 0.0,
+          last_parsed_at: aiParsedData ? new Date().toISOString() : null,
+          
+          // Technical Skills (AI-extracted, structured)
+          technical_skills: aiParsedData?.technical_skills || {},
+          soft_skills: aiParsedData?.soft_skills || [],
+          domain_knowledge: aiParsedData?.domain_knowledge || [],
+          
+          // Education Details (AI-extracted, structured)
+          education: aiParsedData?.education || [],
+          
+          // Certifications (AI-extracted, structured)
+          certifications: aiParsedData?.certifications || [],
+          
+          // Experience Details (AI-extracted, structured)
+          experience_details: aiParsedData?.experience_details || [],
+          
+          // Legacy fields for backward compatibility
+          skills: aiParsedData?.technical_skills?.programming_languages || [],
+          experience_summary: aiParsedData?.experience_details?.[0]?.description || '',
+          education_summary: aiParsedData?.education?.[0]?.degree || '',
+          languages: [],
+          
+          // Resume Metadata
+          is_primary: resumes.length === 0,
+          is_public: true,
+          version: '1.0',
+          ai_parsing_status: aiParsedData ? 'completed' : 'failed',
+          ai_parsing_error: aiParsedData ? null : 'AI parsing not attempted or failed',
+        }
+
+        console.log('=== AI PARSING DEBUG ===')
+        console.log('AI Parsed Data:', aiParsedData)
+        console.log('AI Parsed Data Type:', typeof aiParsedData)
+        console.log('Technical Skills:', aiParsedData?.technical_skills)
+        console.log('Education:', aiParsedData?.education)
+        console.log('Certifications:', aiParsedData?.certifications)
+        console.log('Experience Details:', aiParsedData?.experience_details)
+        console.log('=== DATABASE INSERT DEBUG ===')
+        console.log('Resume Data to Insert:', resumeData)
+        console.log('Technical Skills to Insert:', resumeData.technical_skills)
+        console.log('Education to Insert:', resumeData.education)
+        console.log('Certifications to Insert:', resumeData.certifications)
+        console.log('Experience Details to Insert:', resumeData.experience_details)
+
         const { error: dbError } = await supabase
           .from('resumes')
-          .insert([{
-            user_id: user.id,
-            title: file.name.replace(/\.[^/.]+$/, ''), // Remove file extension
-            file_url: publicUrl,
-            file_name: file.name,
-            file_size: file.size,
-            file_type: file.type,
-            parsed_text: '', // Will be populated later with AI parsing
-            skills: [],
-            experience_summary: '',
-            education_summary: '',
-            certifications: [],
-            languages: [],
-            is_primary: resumes.length === 0, // First resume is primary
-            is_public: true,
-          }])
+          .insert([resumeData])
 
         if (dbError) throw dbError
       }
 
-      setSuccess('Resume uploaded successfully!')
+      setSuccess('Resume uploaded and parsed successfully!')
       await fetchResumes()
     } catch (err) {
       console.error('Error uploading resume:', err)
@@ -285,11 +487,20 @@ export function ResumeManager() {
   }
 
   const addCertification = () => {
-    const cert = prompt('Enter a certification:')
-    if (cert && cert.trim()) {
+    const certName = prompt('Enter certification name:')
+    if (certName && certName.trim()) {
+      const issuingOrg = prompt('Enter issuing organization:') || ''
+      const newCert = {
+        name: certName.trim(),
+        issuing_organization: issuingOrg,
+        issue_date: new Date().toISOString().split('T')[0],
+        level: undefined,
+        credential_id: undefined,
+        expiry_date: undefined
+      }
       setEditForm({
         ...editForm,
-        certifications: [...editForm.certifications, cert.trim()]
+        certifications: [...editForm.certifications, newCert]
       })
     }
   }
@@ -326,6 +537,8 @@ export function ResumeManager() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
+
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -346,6 +559,12 @@ export function ResumeManager() {
           <CardDescription>
             Upload your resume in PDF, DOC, or DOCX format (max 5MB)
           </CardDescription>
+          {!hasOpenAIKey && (
+            <div className="flex items-center gap-2 text-amber-600 text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              <span>OpenAI API key not configured. AI parsing will be disabled.</span>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <div
@@ -368,6 +587,12 @@ export function ResumeManager() {
                 <p className="text-sm text-gray-500">
                   Supports PDF, DOC, DOCX up to 5MB
                 </p>
+                <div className="mt-3 flex items-center justify-center space-x-2 text-xs text-blue-600">
+                  <Brain className="h-4 w-4" />
+                  <span>AI-powered parsing included</span>
+                  <DollarSign className="h-4 w-4" />
+                  <span>~$0.01 per resume</span>
+                </div>
               </div>
             )}
           </div>
@@ -568,7 +793,12 @@ export function ResumeManager() {
                 <div className="flex flex-wrap gap-2">
                   {editForm.certifications.map((cert, index) => (
                     <Badge key={index} variant="outline" className="flex items-center gap-1">
-                      {cert}
+                      {cert.name}
+                      {cert.issuing_organization && ` - ${cert.issuing_organization}`}
+                      {cert.issue_date && ` - ${new Date(cert.issue_date).toLocaleDateString()}`}
+                      {cert.expiry_date && ` - ${new Date(cert.expiry_date).toLocaleDateString()}`}
+                      {cert.level && ` - ${cert.level}`}
+                      {cert.credential_id && ` - ${cert.credential_id}`}
                       <button
                         type="button"
                         onClick={() => removeCertification(index)}

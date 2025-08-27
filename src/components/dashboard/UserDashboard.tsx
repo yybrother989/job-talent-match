@@ -9,7 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import { UserProfile } from '@/components/profile/UserProfile'
 import { ResumeManager } from '@/components/resume/ResumeManager'
 import { JobPosting } from '@/components/jobs/JobPosting'
-import { User, Briefcase, FileText, Settings, LogOut, Building2, Users } from 'lucide-react'
+import { AIParsingTest } from '@/components/test/AIParsingTest'
+import { ClientOnly } from '@/components/ClientOnly'
+import { User, Briefcase, FileText, Settings, LogOut, Building2, Users, Brain } from 'lucide-react'
 
 export function UserDashboard() {
   const { user, signOut, loading } = useAuth()
@@ -78,7 +80,7 @@ export function UserDashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <Briefcase className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -97,6 +99,10 @@ export function UserDashboard() {
                 <span className="hidden sm:inline">Post Jobs</span>
               </TabsTrigger>
             )}
+            <TabsTrigger value="ai-test" className="flex items-center space-x-2">
+              <Brain className="h-4 w-4" />
+              <span className="hidden sm:inline">AI Test</span>
+            </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center space-x-2">
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">Settings</span>
@@ -229,7 +235,16 @@ export function UserDashboard() {
 
           {/* Resumes Tab */}
           <TabsContent value="resumes">
-            <ResumeManager />
+            <ClientOnly fallback={
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading resume manager...</p>
+                </div>
+              </div>
+            }>
+              <ResumeManager />
+            </ClientOnly>
           </TabsContent>
 
           {/* Jobs Tab (Employers Only) */}
@@ -238,6 +253,20 @@ export function UserDashboard() {
               <JobPosting />
             </TabsContent>
           )}
+
+          {/* AI Test Tab */}
+          <TabsContent value="ai-test">
+            <ClientOnly fallback={
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading AI test...</p>
+                </div>
+              </div>
+            }>
+              <AIParsingTest />
+            </ClientOnly>
+          </TabsContent>
 
           {/* Settings Tab */}
           <TabsContent value="settings">
