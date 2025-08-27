@@ -48,7 +48,7 @@ function LandingPageContent() {
               <span className="text-blue-600 block">Dashboard</span>
             </h1>
             <p className="text-xl text-gray-600 leading-relaxed">
-              You're all set up! Access your personalized dashboard to manage resumes, 
+              You&apos;re all set up! Access your personalized dashboard to manage resumes, 
               post jobs, and find your perfect match.
             </p>
             <div className="flex justify-center">

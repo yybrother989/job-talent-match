@@ -6,8 +6,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
 interface Resume {
   id: string
@@ -56,7 +54,7 @@ export function ResumeUpload() {
       for (const file of acceptedFiles) {
         // Upload file to Supabase Storage
         const fileName = `${user.id}/${Date.now()}-${file.name}`
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('resumes')
           .upload(fileName, file)
 
@@ -73,7 +71,7 @@ export function ResumeUpload() {
         setParsing(false)
 
         // Extract basic skills (simplified - in Phase 3 we'll use AI)
-        const skills = extractBasicSkills(parsedText)
+        const skills = extractBasicSkills()
 
         // Save to database
         const { error: dbError } = await supabase
@@ -98,7 +96,7 @@ export function ResumeUpload() {
     } finally {
       setUploading(false)
     }
-  }, [user, supabase, fetchResumes])
+  }, [user, fetchResumes])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -118,7 +116,7 @@ export function ResumeUpload() {
   }
 
   // Basic skill extraction (placeholder for Phase 3 AI)
-  const extractBasicSkills = (text: string): string[] => {
+  const extractBasicSkills = (): string[] => {
     // For now, return placeholder skills
     // In Phase 3, we'll use AI to extract actual skills
     return ['JavaScript', 'React', 'Node.js', 'TypeScript']
