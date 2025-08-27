@@ -150,7 +150,7 @@ export function JobPosting() {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the role, responsibilities, and what you're looking for..."
+                placeholder="Describe the role, responsibilities, and what you&apos;re looking for..."
                 rows={4}
                 required
               />
