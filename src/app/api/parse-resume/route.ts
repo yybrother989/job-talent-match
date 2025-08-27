@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
+// Initialize OpenAI client only if API key is available
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-})
+}) : null
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +12,7 @@ export async function POST(request: NextRequest) {
     console.log('Environment check:')
     console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY)
     console.log('OPENAI_API_KEY length:', process.env.OPENAI_API_KEY?.length || 0)
+    console.log('NODE_ENV:', process.env.NODE_ENV)
     
     const { resumeText } = await request.json()
 
@@ -18,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Resume text is required' }, { status: 400 })
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!openai) {
       return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 })
     }
 
