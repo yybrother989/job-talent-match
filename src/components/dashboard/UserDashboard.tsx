@@ -159,7 +159,7 @@ export function UserDashboard() {
             <CardHeader>
               <CardTitle>Coming Soon</CardTitle>
               <CardDescription>
-                Exciting features we're working on for Phase 3
+                Exciting features we&apos;re working on for Phase 3
               </CardDescription>
             </CardHeader>
             <CardContent>
