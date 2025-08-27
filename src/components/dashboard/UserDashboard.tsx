@@ -1,195 +1,290 @@
 'use client'
 
+import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { ResumeUpload } from '@/components/resume/ResumeUpload'
-import { JobPosting } from '@/components/jobs/JobPosting'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
+import { UserProfile } from '@/components/profile/UserProfile'
+import { ResumeManager } from '@/components/resume/ResumeManager'
+import { JobPosting } from '@/components/jobs/JobPosting'
+import { User, Briefcase, FileText, Settings, LogOut, Building2, Users } from 'lucide-react'
 
 export function UserDashboard() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, loading } = useAuth()
+  const [activeTab, setActiveTab] = useState('overview')
 
-  if (!user) {
+  if (loading) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-600">Please sign in to access your dashboard.</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
       </div>
     )
   }
 
-  // Get user role from metadata or default to job_seeker
-  const userRole = user.user_metadata?.role || 'job_seeker'
-  const isJobSeeker = userRole === 'job_seeker'
-  const isEmployer = userRole === 'employer'
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-600">Please sign in to access your dashboard.</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleSignOut = async () => {
     try {
       await signOut()
     } catch (error) {
-      console.error('Sign out error:', error)
+      console.error('Error signing out:', error)
     }
   }
 
+  const isEmployer = user.user_metadata?.role === 'employer'
+  const isJobSeeker = user.user_metadata?.role === 'job_seeker'
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Welcome back, {user.email}!
-              </h1>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant={isJobSeeker ? 'default' : 'secondary'}>
-                  {isJobSeeker ? 'Job Seeker' : 'Employer'}
-                </Badge>
-                <span className="text-gray-600">
-                  Member since {new Date(user.created_at).toLocaleDateString()}
-                </span>
-              </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Building2 className="h-8 w-8 text-blue-600 mr-3" />
+              <h1 className="text-xl font-bold text-gray-900">Brave</h1>
             </div>
-            <Button variant="outline" onClick={handleSignOut}>
-              Sign Out
-            </Button>
+            
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <User className="h-5 w-5 text-gray-400" />
+                <span className="text-sm text-gray-700">{user.email}</span>
+                <Badge variant={isEmployer ? "default" : "secondary"}>
+                  {isEmployer ? 'Employer' : 'Job Seeker'}
+                </Badge>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
+      </header>
 
-        {/* Dashboard Content */}
-        <div className="grid gap-8">
-          {isJobSeeker && (
-            <>
-              {/* Job Seeker Dashboard */}
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview" className="flex items-center space-x-2">
+              <Briefcase className="h-4 w-4" />
+              <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="flex items-center space-x-2">
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">Profile</span>
+            </TabsTrigger>
+            <TabsTrigger value="resumes" className="flex items-center space-x-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Resumes</span>
+            </TabsTrigger>
+            {isEmployer && (
+              <TabsTrigger value="jobs" className="flex items-center space-x-2">
+                <Briefcase className="h-4 w-4" />
+                <span className="hidden sm:inline">Post Jobs</span>
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="settings" className="flex items-center space-x-2">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Settings</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Welcome Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Job Seeker Dashboard</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <User className="h-5 w-5 mr-2" />
+                    Welcome back!
+                  </CardTitle>
                   <CardDescription>
-                    Upload your resume and get matched with relevant job opportunities
+                    Manage your profile and {isJobSeeker ? 'resumes' : 'job postings'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Quick Actions</h3>
-                      <div className="space-y-3">
-                        <Button className="w-full" variant="outline">
-                          Browse Jobs
-                        </Button>
-                        <Button className="w-full" variant="outline">
-                          View Matches
-                        </Button>
-                        <Button className="w-full" variant="outline">
-                          Update Profile
-                        </Button>
-                      </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Email</span>
+                      <span className="text-sm font-medium">{user.email}</span>
                     </div>
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Your Stats</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center p-3 bg-blue-50 rounded-lg">
-                          <div className="text-2xl font-bold text-blue-600">0</div>
-                          <div className="text-sm text-blue-600">Resumes</div>
-                        </div>
-                        <div className="text-center p-3 bg-green-50 rounded-lg">
-                          <div className="text-2xl font-bold text-green-600">0</div>
-                          <div className="text-sm text-green-600">Job Matches</div>
-                        </div>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Role</span>
+                      <Badge variant={isEmployer ? "default" : "secondary"}>
+                        {isEmployer ? 'Employer' : 'Job Seeker'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Member since</span>
+                      <span className="text-sm font-medium">
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Resume Management */}
-              <ResumeUpload />
-            </>
-          )}
+              {/* Quick Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                  <CardDescription>
+                    Get started with these common tasks
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => setActiveTab('profile')}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Complete your profile
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => setActiveTab('resumes')}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      {isJobSeeker ? 'Upload resume' : 'View resumes'}
+                    </Button>
+                    {isEmployer && (
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={() => setActiveTab('jobs')}
+                      >
+                        <Briefcase className="h-4 w-4 mr-2" />
+                        Post a new job
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
+            {/* Coming Soon Features */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Coming Soon</CardTitle>
+                <CardDescription>
+                  Exciting features we&apos;re working on for Phase 3
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                      <Users className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <h3 className="font-semibold mb-2">AI Job Matching</h3>
+                    <p className="text-sm text-gray-600">
+                      Intelligent matching between your profile and job opportunities
+                    </p>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                      <Briefcase className="h-6 w-6 text-green-600" />
+                    </div>
+                    <h3 className="font-semibold mb-2">Smart Applications</h3>
+                    <p className="text-sm text-gray-600">
+                      One-click applications with AI-powered resume optimization
+                    </p>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                      <FileText className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <h3 className="font-semibold mb-2">Analytics Dashboard</h3>
+                    <p className="text-sm text-gray-600">
+                      Track your application success and profile views
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Profile Tab */}
+          <TabsContent value="profile">
+            <UserProfile />
+          </TabsContent>
+
+          {/* Resumes Tab */}
+          <TabsContent value="resumes">
+            <ResumeManager />
+          </TabsContent>
+
+          {/* Jobs Tab (Employers Only) */}
           {isEmployer && (
-            <>
-              {/* Employer Dashboard */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Employer Dashboard</CardTitle>
-                  <CardDescription>
-                    Post jobs and find the perfect candidates for your team
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Quick Actions</h3>
-                      <div className="space-y-3">
-                        <Button className="w-full" variant="outline">
-                          Browse Candidates
-                        </Button>
-                        <Button className="w-full" variant="outline">
-                          View Applications
-                        </Button>
-                        <Button className="w-full" variant="outline">
-                          Company Settings
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Your Stats</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center p-3 bg-blue-50 rounded-lg">
-                          <div className="text-2xl font-bold text-blue-600">0</div>
-                          <div className="text-sm text-blue-600">Active Jobs</div>
-                        </div>
-                        <div className="text-center p-3 bg-green-50 rounded-lg">
-                          <div className="text-2xl font-bold text-green-600">0</div>
-                          <div className="text-sm text-green-600">Total Applications</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Job Management */}
+            <TabsContent value="jobs">
               <JobPosting />
-            </>
+            </TabsContent>
           )}
 
-          {/* Coming Soon Features */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Coming Soon</CardTitle>
-              <CardDescription>
-                Exciting features we&apos;re working on for Phase 3
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl mb-2">🤖</div>
-                  <h4 className="font-semibold">AI Matching</h4>
-                  <p className="text-sm text-gray-600">
-                    Intelligent job-resume matching with detailed explanations
-                  </p>
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Settings</CardTitle>
+                <CardDescription>
+                  Manage your account preferences and security
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Email Notifications</h3>
+                      <p className="text-sm text-gray-600">Receive updates about your account</p>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      Configure
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Privacy Settings</h3>
+                      <p className="text-sm text-gray-600">Control who can see your profile</p>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      Manage
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Delete Account</h3>
+                      <p className="text-sm text-gray-600">Permanently remove your account and data</p>
+                    </div>
+                    <Button variant="destructive" size="sm">
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl mb-2">📊</div>
-                  <h4 className="font-semibold">Analytics</h4>
-                  <p className="text-sm text-gray-600">
-                    Detailed insights into your job search or hiring process
-                  </p>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl mb-2">💬</div>
-                  <h4 className="font-semibold">Messaging</h4>
-                  <p className="text-sm text-gray-600">
-                    Direct communication between job seekers and employers
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
   )
 }

@@ -23,12 +23,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Only proceed if Supabase client is available
     if (!supabase) {
+      console.log('❌ Supabase client not available')
       setLoading(false)
       return
     }
 
+    console.log('✅ Supabase client available, initializing auth...')
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.email || 'No session')
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
@@ -41,14 +45,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Auth state change:', event, session?.user?.email)
       
       if (event === 'SIGNED_IN' && session?.user && supabase) {
-        // User just signed up, create profile in our users table
+        // User just signed up, create profile in our user_profiles table
         try {
+          console.log('Creating user profile for:', session.user.email)
+          
           const { error: profileError } = await supabase
-            .from('users')
+            .from('user_profiles')
             .insert([
               {
-                id: session.user.id,
-                email: session.user.email!,
+                user_id: session.user.id,
+                first_name: '',
+                last_name: '',
                 role: session.user.user_metadata?.role || 'job_seeker',
               },
             ])
@@ -57,6 +64,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.error('Error creating user profile:', profileError)
           } else {
             console.log('User profile created successfully')
+          }
+
+          // Also create user preferences
+          const { error: preferencesError } = await supabase
+            .from('user_preferences')
+            .insert([
+              {
+                user_id: session.user.id,
+                job_alerts: true,
+                email_notifications: true,
+                push_notifications: false,
+                privacy_level: 'public',
+                preferred_job_types: [],
+                preferred_locations: [],
+              },
+            ])
+          
+          if (preferencesError) {
+            console.error('Error creating user preferences:', preferencesError)
+          } else {
+            console.log('User preferences created successfully')
           }
         } catch (error) {
           console.error('Error in profile creation:', error)
