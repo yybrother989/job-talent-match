@@ -10,8 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
+
 import { Trash2, Download, Edit, Eye, Upload, FileText, Star } from 'lucide-react'
 
 interface Resume {
@@ -55,13 +54,6 @@ export function ResumeManager() {
     is_public: true,
   })
 
-  // Load user resumes
-  useEffect(() => {
-    if (user) {
-      fetchResumes()
-    }
-  }, [user])
-
   const fetchResumes = async () => {
     if (!user || !supabase) return
 
@@ -83,6 +75,13 @@ export function ResumeManager() {
       setLoading(false)
     }
   }
+
+  // Load user resumes
+  useEffect(() => {
+    if (user) {
+      fetchResumes()
+    }
+  }, [user])
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!user || !supabase) return
@@ -150,7 +149,7 @@ export function ResumeManager() {
     } finally {
       setUploading(false)
     }
-  }, [user, resumes.length, fetchResumes])
+  }, [user, resumes.length])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -607,10 +606,12 @@ export function ResumeManager() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <Switch
+                <input
+                  type="checkbox"
                   id="is_public"
                   checked={editForm.is_public}
-                  onCheckedChange={(checked) => setEditForm({ ...editForm, is_public: checked })}
+                  onChange={(e) => setEditForm({ ...editForm, is_public: e.target.checked })}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <Label htmlFor="is_public">Make this resume public</Label>
               </div>
