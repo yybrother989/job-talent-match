@@ -224,6 +224,34 @@ export function UserProfile() {
 
       if (result.error) throw result.error
 
+      // Also store in DynamoDB
+      console.log('Storing updated profile data in DynamoDB...')
+      try {
+        const dynamoResponse = await fetch('/api/store-user-profile-dynamodb', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            profileData: profileData,
+            preferencesData: preferencesForm,
+          }),
+        })
+
+        if (!dynamoResponse.ok) {
+          const errorData = await dynamoResponse.json()
+          console.warn('DynamoDB profile update failed:', errorData.error)
+          // Don't throw error - continue with Supabase storage
+        } else {
+          const dynamoData = await dynamoResponse.json()
+          console.log('DynamoDB profile update successful:', dynamoData.userId)
+        }
+      } catch (dynamoError) {
+        console.warn('DynamoDB profile update error:', dynamoError)
+        // Don't throw error - continue with Supabase storage
+      }
+
       setSuccess('Profile saved successfully!')
       await loadUserData() // Reload data
     } catch (err) {
@@ -262,6 +290,34 @@ export function UserProfile() {
       }
 
       if (result.error) throw result.error
+
+      // Also store in DynamoDB
+      console.log('Storing updated preferences data in DynamoDB...')
+      try {
+        const dynamoResponse = await fetch('/api/store-user-profile-dynamodb', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            profileData: formData,
+            preferencesData: preferencesData,
+          }),
+        })
+
+        if (!dynamoResponse.ok) {
+          const errorData = await dynamoResponse.json()
+          console.warn('DynamoDB preferences update failed:', errorData.error)
+          // Don't throw error - continue with Supabase storage
+        } else {
+          const dynamoData = await dynamoResponse.json()
+          console.log('DynamoDB preferences update successful:', dynamoData.userId)
+        }
+      } catch (dynamoError) {
+        console.warn('DynamoDB preferences update error:', dynamoError)
+        // Don't throw error - continue with Supabase storage
+      }
 
       setSuccess('Preferences saved successfully!')
       await loadUserData() // Reload data

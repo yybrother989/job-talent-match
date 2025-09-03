@@ -8,16 +8,13 @@ console.log('Environment variables check:')
 console.log('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✅ Set' : '❌ Missing')
 console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Set' : '❌ Missing')
 
-// Only create client if environment variables are available
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null
-
-if (supabase) {
-  console.log('✅ Supabase client created successfully')
-} else {
-  console.log('❌ Supabase client creation failed - missing environment variables')
+// Ensure environment variables are available and create client
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
 }
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+console.log('✅ Supabase client created successfully')
 
 // Database types
 export interface Database {

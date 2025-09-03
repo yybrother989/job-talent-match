@@ -11,7 +11,7 @@ export function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'job_seeker' | 'employer'>('job_seeker')
+  // All users are job seekers now
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -26,7 +26,7 @@ export function AuthForm() {
 
     try {
       if (isSignUp) {
-        await signUp(email, password, role)
+        await signUp(email, password)
         setMessage('Check your email for confirmation!')
       } else {
         await signIn(email, password)
@@ -79,26 +79,10 @@ export function AuthForm() {
           </div>
 
           {isSignUp && (
-            <div className="space-y-2">
-              <Label htmlFor="role">I am a...</Label>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={role === 'job_seeker' ? 'default' : 'outline'}
-                  onClick={() => setRole('job_seeker')}
-                  className="flex-1"
-                >
-                  Job Seeker
-                </Button>
-                <Button
-                  type="button"
-                  variant={role === 'employer' ? 'default' : 'outline'}
-                  onClick={() => setRole('employer')}
-                  className="flex-1"
-                >
-                  Employer
-                </Button>
-              </div>
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                Join as a Job Seeker to find your perfect match
+              </p>
             </div>
           )}
 

@@ -8,10 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { UserProfile } from '@/components/profile/UserProfile'
 import { ResumeManager } from '@/components/resume/ResumeManager'
-import { JobPosting } from '@/components/jobs/JobPosting'
+import { ResumeManagerS3 } from '@/components/resume/ResumeManagerS3'
+import { JobMatchingDashboard } from '@/components/matching/JobMatchingDashboard'
 import { AIParsingTest } from '@/components/test/AIParsingTest'
+import { EmbeddingTest } from '@/components/test/EmbeddingTest'
+import { EmbeddingManager } from '@/components/admin/EmbeddingManager'
 import { ClientOnly } from '@/components/ClientOnly'
-import { User, Briefcase, FileText, Settings, LogOut, Building2, Users, Brain } from 'lucide-react'
+import { User, Briefcase, FileText, Settings, LogOut, Building2, Users, Brain, Star, Database } from 'lucide-react'
 
 export function UserDashboard() {
   const { user, signOut, loading } = useAuth()
@@ -46,7 +49,7 @@ export function UserDashboard() {
     }
   }
 
-  const isEmployer = user.user_metadata?.role === 'employer'
+  // All users are job seekers now
   const isJobSeeker = user.user_metadata?.role === 'job_seeker'
 
   return (
@@ -64,8 +67,8 @@ export function UserDashboard() {
               <div className="flex items-center space-x-2">
                 <User className="h-5 w-5 text-gray-400" />
                 <span className="text-sm text-gray-700">{user.email}</span>
-                <Badge variant={isEmployer ? "default" : "secondary"}>
-                  {isEmployer ? 'Employer' : 'Job Seeker'}
+                <Badge variant="secondary">
+                  Job Seeker
                 </Badge>
               </div>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
@@ -80,7 +83,7 @@ export function UserDashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <Briefcase className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -93,15 +96,17 @@ export function UserDashboard() {
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Resumes</span>
             </TabsTrigger>
-            {isEmployer && (
-              <TabsTrigger value="jobs" className="flex items-center space-x-2">
-                <Briefcase className="h-4 w-4" />
-                <span className="hidden sm:inline">Post Jobs</span>
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="matching" className="flex items-center space-x-2">
+              <Star className="h-4 w-4" />
+              <span className="hidden sm:inline">Job Matches</span>
+            </TabsTrigger>
             <TabsTrigger value="ai-test" className="flex items-center space-x-2">
               <Brain className="h-4 w-4" />
               <span className="hidden sm:inline">AI Test</span>
+            </TabsTrigger>
+            <TabsTrigger value="admin" className="flex items-center space-x-2">
+              <Database className="h-4 w-4" />
+              <span className="hidden sm:inline">Admin</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center space-x-2">
               <Settings className="h-4 w-4" />
@@ -120,7 +125,7 @@ export function UserDashboard() {
                     Welcome back!
                   </CardTitle>
                   <CardDescription>
-                    Manage your profile and {isJobSeeker ? 'resumes' : 'job postings'}
+                    Manage your profile and resumes
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -131,8 +136,8 @@ export function UserDashboard() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Role</span>
-                      <Badge variant={isEmployer ? "default" : "secondary"}>
-                        {isEmployer ? 'Employer' : 'Job Seeker'}
+                      <Badge variant="secondary">
+                        Job Seeker
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
@@ -171,16 +176,7 @@ export function UserDashboard() {
                       <FileText className="h-4 w-4 mr-2" />
                       {isJobSeeker ? 'Upload resume' : 'View resumes'}
                     </Button>
-                    {isEmployer && (
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start"
-                        onClick={() => setActiveTab('jobs')}
-                      >
-                        <Briefcase className="h-4 w-4 mr-2" />
-                        Post a new job
-                      </Button>
-                    )}
+
                   </div>
                 </CardContent>
               </Card>
@@ -196,13 +192,13 @@ export function UserDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-3 gap-4">
-                  <div className="text-center p-4 border rounded-lg">
-                    <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <Users className="h-6 w-6 text-blue-600" />
+                  <div className="text-center p-4 border rounded-lg bg-green-50">
+                    <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                      <Star className="h-6 w-6 text-green-600" />
                     </div>
-                    <h3 className="font-semibold mb-2">AI Job Matching</h3>
+                    <h3 className="font-semibold mb-2">AI Job Matching ✅</h3>
                     <p className="text-sm text-gray-600">
-                      Intelligent matching between your profile and job opportunities
+                      Now available! Check the "Job Matches" tab
                     </p>
                   </div>
                   <div className="text-center p-4 border rounded-lg">
@@ -243,16 +239,23 @@ export function UserDashboard() {
                 </div>
               </div>
             }>
-              <ResumeManager />
+              <ResumeManagerS3 />
             </ClientOnly>
           </TabsContent>
 
-          {/* Jobs Tab (Employers Only) */}
-          {isEmployer && (
-            <TabsContent value="jobs">
-              <JobPosting />
-            </TabsContent>
-          )}
+          {/* Job Matching Tab */}
+          <TabsContent value="matching">
+            <ClientOnly fallback={
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading job matches...</p>
+                </div>
+              </div>
+            }>
+              <JobMatchingDashboard />
+            </ClientOnly>
+          </TabsContent>
 
           {/* AI Test Tab */}
           <TabsContent value="ai-test">
@@ -264,7 +267,41 @@ export function UserDashboard() {
                 </div>
               </div>
             }>
-              <AIParsingTest />
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">AI Integration Testing</h2>
+                  <p className="text-gray-600">Test OpenAI resume parsing and Hugging Face embeddings</p>
+                </div>
+                
+                <Tabs defaultValue="resume-parsing" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="resume-parsing">Resume Parsing (OpenAI)</TabsTrigger>
+                    <TabsTrigger value="embeddings">Embeddings (Hugging Face)</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="resume-parsing" className="mt-6">
+                    <AIParsingTest />
+                  </TabsContent>
+                  
+                  <TabsContent value="embeddings" className="mt-6">
+                    <EmbeddingTest />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </ClientOnly>
+          </TabsContent>
+
+          {/* Admin Tab */}
+          <TabsContent value="admin">
+            <ClientOnly fallback={
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading admin features...</p>
+                </div>
+              </div>
+            }>
+              <EmbeddingManager />
             </ClientOnly>
           </TabsContent>
 

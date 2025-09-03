@@ -150,7 +150,7 @@ function LandingPageContent() {
                 </div>
                 <CardTitle>Upload & Analyze</CardTitle>
                 <CardDescription>
-                  Job seekers upload resumes, employers post job listings. Our AI analyzes skills and requirements.
+                  Job seekers upload resumes and our AI analyzes skills to find perfect job matches.
                 </CardDescription>
               </CardHeader>
             </Card>
