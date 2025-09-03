@@ -11,8 +11,8 @@ async function testAccessControl() {
   console.log('📋 Your Understanding is CORRECT! Here\'s how it works:\n');
 
   console.log('1️⃣  IAM User: job-talent-match-ai');
-  console.log('   - Access Key ID: AKIA6GEKUY6ZVXG2Q5PT');
-  console.log('   - Secret Access Key: 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\n');
+  console.log('   - Access Key ID: [CONFIGURED IN ENVIRONMENT]');
+  console.log('   - Secret Access Key: [CONFIGURED IN ENVIRONMENT]\n');
 
   console.log('2️⃣  IAM Policies Attached:');
   console.log('   ✅ AmazonBedrockFullAccess');
@@ -40,7 +40,7 @@ async function testAccessControl() {
   console.log('5️⃣  The Access Control Flow:');
   console.log('   Your Access Key → IAM Policies → AWS Services → Specific Models');
   console.log('        ↓                ↓              ↓              ↓');
-  console.log('   AKIA6GEK... → BedrockFullAccess → Bedrock → Claude Models\n');
+  console.log('   [YOUR_KEY] → BedrockFullAccess → Bedrock → Claude Models\n');
 
   console.log('6️⃣  What This Means:');
   console.log('   ✅ You can access ANY Bedrock model (if you have the policy)');
