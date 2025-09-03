@@ -1,9 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BedrockResumeParser } from '../../../../aws-ai-service/src/services/bedrock/resumeParser';
+import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { retryWithBackoff, smartParseResume } from '@/lib/retryLogic';
 
-// Initialize Bedrock parser
-const resumeParser = new BedrockResumeParser();
+// Initialize Bedrock client
+const bedrockClient = new BedrockRuntimeClient({
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
+
+// Bedrock parser function
+const bedrockParser = async (resumeText: string) => {
+  const prompt = `Parse the following resume text and extract structured information. Return a JSON object with the following fields:
+  - name: Full name
+  - email: Email address
+  - phone: Phone number
+  - location: Location/address
+  - summary: Professional summary
+  - skills: Array of technical skills
+  - experience: Array of work experience objects with company, title, duration, description
+  - education: Array of education objects with degree, institution, year
+  - languages: Array of languages
+  - yearsOfExperience: Number of years of experience
+  - currentRole: Current job title
+
+  Resume text: ${resumeText}`;
+
+  const command = new InvokeModelCommand({
+    modelId: process.env.AWS_BEDROCK_MODEL_ID || 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+    contentType: 'application/json',
+    accept: 'application/json',
+    body: JSON.stringify({
+      anthropic_version: 'bedrock-2023-05-31',
+      max_tokens: 4000,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    })
+  });
+
+  const response = await bedrockClient.send(command);
+  const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+  
+  return {
+    success: true,
+    data: JSON.parse(responseBody.content[0].text),
+    confidence: 0.9
+  };
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,7 +94,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Use smart parsing with retry and fallback
-    const result = await smartParseResume(resumeText, resumeParser, openaiParser);
+    const result = await smartParseResume(resumeText, bedrockParser, openaiParser);
 
     const duration = Date.now() - startTime;
     console.log(`Smart Resume Parser: Completed in ${duration}ms using ${result.provider}`);
