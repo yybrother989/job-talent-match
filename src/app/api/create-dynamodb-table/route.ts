@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Table already exists',
-        tableStatus: describeResult.Table.TableStatus,
-        tableArn: describeResult.Table.TableArn,
+        tableStatus: describeResult.Table?.TableStatus,
+        tableArn: describeResult.Table?.TableArn,
         timestamp: new Date().toISOString(),
       });
     } catch (error: any) {
@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Table created successfully',
-      tableArn: result.TableDescription.TableArn,
-      tableStatus: result.TableDescription.TableStatus,
+      tableArn: result.TableDescription?.TableArn,
+      tableStatus: result.TableDescription?.TableStatus,
       note: 'Table is being created and will be active shortly',
       timestamp: new Date().toISOString(),
     });
